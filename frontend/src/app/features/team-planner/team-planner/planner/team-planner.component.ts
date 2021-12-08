@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import {
   CalendarOptions,
+  DateSelectArg,
   EventInput,
 } from '@fullcalendar/core';
 import {
@@ -17,14 +18,15 @@ import {
 } from 'rxjs';
 import {
   debounceTime,
-  mergeMap,
-  map,
-  filter,
   distinctUntilChanged,
+  filter,
+  map,
+  mergeMap,
 } from 'rxjs/operators';
 import { EventClickArg } from '@fullcalendar/common';
 import { StateService } from '@uirouter/angular';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
+import interactionPlugin from '@fullcalendar/interaction';
 import { FullCalendarComponent } from '@fullcalendar/angular';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { ConfigurationService } from 'core-app/core/config/configuration.service';
@@ -194,8 +196,11 @@ export class TeamPlannerComponent extends UntilDestroyedMixin implements OnInit,
         this.calendarOptions$.next(
           this.calendar.calendarOptions({
             schedulerLicenseKey: 'GPL-My-Project-Is-Open-Source',
+            editable: false,
+            selectable: true,
             plugins: [
               resourceTimelinePlugin,
+              interactionPlugin,
             ],
             titleFormat: {
               year: 'numeric',
@@ -225,6 +230,7 @@ export class TeamPlannerComponent extends UntilDestroyedMixin implements OnInit,
             events: this.calendarEventsFunction.bind(this) as unknown,
             resources: [],
             eventClick: this.openSplitView.bind(this) as unknown,
+            select: this.handleDateClicked.bind(this) as unknown,
             resourceLabelContent: (data:ResourceLabelContentArg) => this.renderTemplate(this.resourceContent, data.resource.id, data),
             resourceLabelWillUnmount: (data:ResourceLabelContentArg) => this.unrenderTemplate(data.resource.id),
           } as CalendarOptions),
@@ -330,5 +336,26 @@ export class TeamPlannerComponent extends UntilDestroyedMixin implements OnInit,
         };
       })
       .filter((event) => !!event) as EventInput[];
+  }
+
+  private handleDateClicked(info:DateSelectArg) {
+    const defaults = {
+      startDate: info.startStr,
+      // end date is exclusive
+      dueDate: moment(info.end).subtract(1, 'd').format('YYYY-MM-DD'),
+      _links: {
+        assignee: {
+          href: info.resource?.id,
+        },
+      },
+    };
+
+    void this.$state.go(
+      splitViewRoute(this.$state, 'new'),
+      {
+        defaults,
+        tabIdentifier: 'overview',
+      },
+    );
   }
 }
