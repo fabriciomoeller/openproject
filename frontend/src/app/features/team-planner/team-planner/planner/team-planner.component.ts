@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  HostListener,
   OnDestroy,
   OnInit,
   TemplateRef,
@@ -339,13 +340,27 @@ export class TeamPlannerComponent extends UntilDestroyedMixin implements OnInit,
   }
 
   private handleDateClicked(info:DateSelectArg) {
-    const defaults = {
-      startDate: info.startStr,
+    this.openNewSplitCreate(
+      info.startStr,
       // end date is exclusive
-      dueDate: moment(info.end).subtract(1, 'd').format('YYYY-MM-DD'),
+      moment(info.end).subtract(1, 'd').format('YYYY-MM-DD'),
+      info.resource?.id || '',
+    );
+  }
+
+  // Allow triggering the select from a event, as
+  // this is otherwise not testable from selenium
+  @HostListener(
+    'document:teamPlannerSelectDate',
+    ['$event.detail.start', '$event.detail.end', '$event.detail.assignee'],
+  )
+  openNewSplitCreate(start:string, end:string, resourceHref:string):void {
+    const defaults = {
+      startDate: start,
+      dueDate: end,
       _links: {
         assignee: {
-          href: info.resource?.id,
+          href: resourceHref,
         },
       },
     };
