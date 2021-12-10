@@ -128,7 +128,7 @@ describe Projects::SetAttributesService, type: :model do
       end
 
       context 'public default value', with_settings: { default_projects_public: true } do
-        context 'with a value for is_public provided' do
+        context 'with a value for public provided' do
           let(:call_attributes) do
             {
               public: false
